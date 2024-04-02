@@ -1,0 +1,17 @@
+<div id="<%= dom_id session %>">
+  <p>
+    <strong>User:</strong>
+    <%= link_to session.user.screen_name, session.user, class: "underline focus:outline-none focus:ring focus:ring-offset-2 focus:ring-blue-500" %>
+  </p>
+
+  <p>
+    <strong>User agent:</strong>
+    <%= session.user_agent %>
+  </p>
+
+  <p>
+    <strong>IP address:</strong>
+    <%= session.ip_address %>
+  </p>
+
+</div>

@@ -33,3 +33,10 @@ en:
       not_saved:
         one: "1 error prohibited this %{resource} from being saved:"
         other: "%{count} errors prohibited this %{resource} from being saved:"
+  activerecord:
+    errors:
+      models:
+        session:
+          attributes:
+            user:
+              required: "email or password is incorrect"
