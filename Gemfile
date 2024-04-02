@@ -17,7 +17,7 @@ gem "stimulus-rails"
 # Bundle and process CSS [https://github.com/rails/cssbundling-rails]
 gem "cssbundling-rails"
 # Use Redis adapter to run Action Cable in production
-gem "redis", ">= 4.0.1"
+# gem "redis", ">= 4.0.1"
 
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
 # gem "kredis"
