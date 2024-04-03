@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_04_03_064225) do
+ActiveRecord::Schema[7.2].define(version: 2024_04_03_085735) do
   create_table "posts", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "title", null: false
@@ -39,6 +39,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_04_03_064225) do
     t.integer "posts_count", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "about"
     t.index ["screen_name"], name: "index_users_on_screen_name", unique: true
   end
 

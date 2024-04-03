@@ -2,7 +2,7 @@
   Editing profile
 </h1>
 
-<%= form_with(model: @user, class: "contents") do |form| %>
+<%= form_with(model: @user, url: "/user", class: "contents") do |form| %>
   <% if @user.errors.any? %>
     <div class="text-red-500 font-medium mb-8" role="alert">
       <h2 class="font-black text-sm uppercase tracking flex items-center">
@@ -19,6 +19,11 @@
   <div class="flex flex-col gap-2 w-1/2 mb-8">
     <%= form.label :screen_name %>
     <%= form.text_field :screen_name %>
+  </div>
+
+  <div class="flex flex-col gap-2 w-full mb-8">
+    <%= form.label :about %>
+    <%= form.text_area :about, rows: 5 %>
   </div>
 
   <div class="inline-block">
