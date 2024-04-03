@@ -9,7 +9,7 @@
 #   end
 User.insert_all(
   100.times.map do |n|
-    { screen_name: [Faker::Lorem.word, n.to_s.rjust(3, '0')].join("_"),
+    { screen_name: [ Faker::Lorem.word, n.to_s.rjust(3, '0') ].join("_"),
       password_digest: BCrypt::Password.create("password", cost: 1),
       about: Faker::Lorem.paragraph,
       created_at: Faker::Time.between(from: 1.week.ago, to: DateTime.now) }
@@ -23,7 +23,7 @@ user_ids_and_created_ats = User.pluck(:id, :created_at)
     title: Faker::Lorem.words(number: rand(2..5)).join(" "),
     description: rand(5..10).times.collect { rand(5..10).times.collect { Faker::Lorem.sentence(word_count: rand(5..10)) }.join(" ") }.join("\n\n"),
     created_at: Faker::Time.between(from: created_at, to: DateTime.now)
-  }, returning: [:id, :created_at])
+  }, returning: [ :id, :created_at ])
   result = results.to_a[0]
   rand(5..15).times do |nn|
     Comment.insert({

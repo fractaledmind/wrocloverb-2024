@@ -115,6 +115,6 @@ class BenchmarkingController < ApplicationController
         "SERVER_SOFTWARE",
         "action_dispatch.request_id",
         "puma.request_body_wait",
-      ).map { _1.join(': ') }.join("\n")
+      ).map { _1.join(": ") }.join("\n")
     end
 end
