@@ -32,26 +32,40 @@
 
 <br>
 
-<details open>
-  <summary class="cursor-pointer">
-    <strong>Posts:</strong>
-    <%= @user.posts.size %>
-  </summary>
-  <ul class="list-none space-y-4">
-    <% @user.posts.order(created_at: :desc).each do |post| %>
-      <li><%= render post %></li>
-    <% end %>
-  </ul>
-</details>
-
-<% if @user == Current.user %>
-  <details>
-    <summary class="cursor-pointer">
-      <strong>Sessions:</strong>
-      <%= @user.sessions.size %>
+<div class="space-y-1.5">
+  <details open>
+    <summary class="cursor-pointer focus:outline-none focus-visible:ring ring-offset-2 ring-blue-500">
+      <strong>Posts:</strong>
+      <%= @user.posts.size %>
     </summary>
-    <ul class="list-[square] list-inside space-y-4 pl-6">
-      <%= render @user.sessions.order(created_at: :desc) %>
+    <ul class="list-none space-y-4">
+      <% @user.posts.order(created_at: :desc).each do |post| %>
+        <li><%= render post %></li>
+      <% end %>
     </ul>
   </details>
-<% end %>
+
+  <details>
+    <summary class="cursor-pointer focus:outline-none focus-visible:ring ring-offset-2 ring-blue-500">
+      <strong>Comments:</strong>
+      <%= @user.comments.size %>
+    </summary>
+    <ul class="list-none space-y-4">
+      <% @user.comments.order(created_at: :desc).each do |comment| %>
+        <li><%= render comment %></li>
+      <% end %>
+    </ul>
+  </details>
+
+  <% if @user == Current.user %>
+    <details>
+      <summary class="cursor-pointer focus:outline-none focus-visible:ring ring-offset-2 ring-blue-500">
+        <strong>Sessions:</strong>
+        <%= @user.sessions.size %>
+      </summary>
+      <ul class="list-[square] list-inside space-y-4 pl-6">
+        <%= render @user.sessions.order(created_at: :desc) %>
+      </ul>
+    </details>
+  <% end %>
+</div>
