@@ -25,7 +25,7 @@ Rails.application.routes.draw do
     post "comment_destroy"
     post "post_show"
     post "posts_index"
-    post "comment_show"
+    post "user_show"
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
