@@ -12,7 +12,7 @@ class BenchmarkingController < ApplicationController
       comment_destroy:  0.03,
       post_show:        0.25,
       posts_index:      0.25,
-      comment_show:     0.25,
+      user_show:        0.25,
     )
   end
 
@@ -25,7 +25,7 @@ class BenchmarkingController < ApplicationController
       comment_destroy:  0.20,
       post_show:        0.05,
       posts_index:      0.15,
-      comment_show:     0.05,
+      user_show:        0.05,
     )
   end
 
@@ -38,7 +38,7 @@ class BenchmarkingController < ApplicationController
       comment_destroy:  0.11,
       post_show:        0.17,
       posts_index:      0.17,
-      comment_show:     0.16,
+      user_show:        0.16,
     )
   end
 
@@ -75,9 +75,8 @@ class BenchmarkingController < ApplicationController
     render "posts/index", status: :ok
   end
 
-  def comment_show
-    @comment = Comment.where("id >= ?", rand(Comment.minimum(:id)..Comment.maximum(:id))).limit(1).first
-    render "comments/show", status: :ok
+  def user_show
+    render "users/show", status: :ok
   end
 
   private
