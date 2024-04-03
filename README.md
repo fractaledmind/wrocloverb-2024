@@ -205,3 +205,86 @@ Status code distribution:
 As always, these results come from the run with the highest requets per second. I ran the command three times on a freshly seeded database (not resetting the database after each run, only at the beginning of the set of three runs). Across the three runs, the single slowest request took 0.1890 seconds. The average request time was 0.03026667 seconds (`[0.0305, 0.0292, 0.0311]`). The average requests per second was 660 (`[655.3554, 683.0386, 641.6073]`). There were no 500 errored responses per run. Finally, the average 90th percentile response time was 0.0596 seconds (`[0.0594, 0.0581, 0.0613]`).
 
 These are _amazing_ improvements! Our slowest request was improved by 83&times;, average request time improved by 36&times;, requests per second improved by 40&times;, the 90th percentile response time improved by 117&times;, and we went from frequent 500 errors to _none_! These are **huge** improvements, and they were all achieved by adding a single gem to our Gemfile.
+
+## Step 2: Configuring compile-time flags
+
+We can improve things a bit more by configuring some of the internals of SQLite using compile-time flags. The [`sqlite3-ruby` gem](https://github.com/sparklemotion/sqlite3-ruby) allows you to set these flags for Bundler to use them via the `build.sqlite3` configuration option. Here is the command to set the flags and the flags I recommend setting:
+
+```sh
+bundle config set build.sqlite3 \
+"--with-sqlite-cflags='-DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_LIKE_DOESNT_MATCH_BLOBS -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_PROGRESS_CALLBACK -DSQLITE_OMIT_SHARED_CACHE -DSQLITE_USE_ALLOCA -DSQLITE_ENABLE_FTS5'"
+```
+
+You can dig into the details of each of these flags in the [SQLite docs](https://www.sqlite.org/compile.html#recommended_compile_time_options); I won't repeat their explanation of what each one does here.
+
+> **Note:** If you have already run `bundle install` once before setting these compile-time flags, you will need to uninstall the version of the `sqlite3-ruby` gem that was installed before setting the flags. You can do this by running `gem uninstall sqlite3` and then choosing the version that your app is using as seen in the `Gemfile.lock` file (right now, it is `1.7.3`). After uninstalling the gem, run `bundle install` again.
+
+Once you have compiled your specific installation of SQLite, you can confirm that the flags were set correctly by running the following command from the Rails console:
+
+```ruby
+ActiveRecord::Base.connection.raw_connection.execute 'pragma compile_options;'
+```
+
+Check to ensure that the output includes the flags you set. If it does, you are good to go!
+
+> **Note:** Rails' default `.gitignore` will ignore any and all files in the `.bundle` directory. This means that the `config` file you set will not be checked into your repository. In order to ensure that this configuration is shared with anyone that clones and runs this repository, a new section was added to the `bin/setup` script to run the `bundle config` command automatically. This way, anyone that runs `bin/setup` will have the same configuration set up on their machine.
+
+With this in place, we can re-run the load test to see how the results have changed. On my laptop, I got these results after setting the compile-time flags:
+
+```
+$ hey -c 20 -z 10s -m POST http://127.0.0.1:3000/benchmarking/balanced
+
+Summary:
+  Total:	10.0338 secs
+  Slowest:	0.1769 secs
+  Fastest:	0.0031 secs
+  Average:	0.0285 secs
+  Requests/sec:	699.8368
+
+  Total data:	159483590 bytes
+  Size/request:	22711 bytes
+
+Response time histogram:
+  0.003 [1]	|
+  0.020 [3259]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.038 [1999]	|■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.055 [969]	|■■■■■■■■■■■■
+  0.073 [455]	|■■■■■■
+  0.090 [194]	|■■
+  0.107 [91]	|■
+  0.125 [30]	|
+  0.142 [16]	|
+  0.160 [6]	|
+  0.177 [2]	|
+
+
+Latency distribution:
+  10% in 0.0077 secs
+  25% in 0.0119 secs
+  50% in 0.0230 secs
+  75% in 0.0380 secs
+  90% in 0.0580 secs
+  95% in 0.0720 secs
+  99% in 0.1015 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0000 secs, 0.0031 secs, 0.1769 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0000 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0022 secs
+  resp wait:	0.0198 secs, 0.0020 secs, 0.1612 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0040 secs
+
+Status code distribution:
+  [200]	7021 responses
+  [500]	1 responses
+```
+
+Again, these results come from the run with the highest requets per second. I ran the command three times on a freshly seeded database (not resetting the database after each run, only at the beginning of the set of three runs). Across the three runs, the single slowest request took 0.2044 seconds. The average request time was 0.02906667 seconds (`[0.0293, 0.0294, 0.0285]`). The average requests per second was 686.28033333 (`[681.8377, 677.1665, 699.8368]`). There were no 500 errored responses per run. Finally, the average 90th percentile response time was 0.05816667 seconds (`[0.0566, 0.0599, 0.0580]`).
+
+So, we see slight improvements, but this is exactly what the [SQLite docs](https://www.sqlite.org/compile.html#recommended_compile_time_options) tell us to expect:
+
+> When all of the recommended compile-time options above are used, the SQLite library will be approximately 3% smaller and use about 5% fewer CPU cycles. So these options do not make a huge difference. But in some design situations, every little bit helps.
+
+The average request time improved 4%, the average requests per second improved 4%, and the average 90th percentile response time improved 2.5%.
+
+You can decide for yourself whether these improvements are worth implementing compile-time flags. If you are running a high-traffic application, every little bit helps. If you are running a low-traffic application, you may not see any noticeable difference.
