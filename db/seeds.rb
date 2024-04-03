@@ -24,6 +24,9 @@ user_ids_and_created_ats = User.pluck(:id, :created_at)
     description: rand(5..10).times.collect { rand(5..10).times.collect { Faker::Lorem.sentence(word_count: rand(5..10)) }.join(" ") }.join("\n\n"),
     created_at: Faker::Time.between(from: created_at, to: DateTime.now)
   }, returning: [ :id, :created_at ])
+
+  next unless results.present?
+
   result = results.to_a[0]
   rand(5..15).times do |nn|
     Comment.insert({
