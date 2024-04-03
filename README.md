@@ -72,3 +72,62 @@ end
 The `read_heavy`, `write_heavy`, and `balanced` paths are designed to test the performance of the app under a mix of scenarios. Each of those paths will randomly run one of the more precise actions, with the overall distribution defined in the controller to match the name. The rest of the paths are specific actions, which you can use if you want to see how a particular action handles concurrent load.
 
 In general, I recommend running the `balanced` path with a variety of different values of `N` to see how the app performs under a variety of different scenarios.
+
+## Results
+
+Running the `balanced` benchmark with 10 concurrent requests for 1 second, I get the following results on my laptop:
+
+```
+$ hey -c 10 -z 1s -m POST http://127.0.0.1:3000/benchmarking/balanced
+
+Summary:
+  Total:	1.0108 secs
+  Slowest:	0.1288 secs
+  Fastest:	0.0029 secs
+  Average:	0.0156 secs
+  Requests/sec:	636.1533
+
+  Total data:	12464957 bytes
+  Size/request:	19385 bytes
+
+Response time histogram:
+  0.003 [1]	|
+  0.016 [446]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.028 [84]	|■■■■■■■■
+  0.041 [92]	|■■■■■■■■
+  0.053 [11]	|■
+  0.066 [5]	|
+  0.078 [1]	|
+  0.091 [1]	|
+  0.104 [1]	|
+  0.116 [0]	|
+  0.129 [1]	|
+
+
+Latency distribution:
+  10% in 0.0062 secs
+  25% in 0.0080 secs
+  50% in 0.0109 secs
+  75% in 0.0191 secs
+  90% in 0.0331 secs
+  95% in 0.0372 secs
+  99% in 0.0601 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0000 secs, 0.0029 secs, 0.1288 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0000 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0012 secs
+  resp wait:	0.0129 secs, 0.0024 secs, 0.1288 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0019 secs
+
+Status code distribution:
+  [200]	580 responses
+  [500]	63 responses
+```
+
+There are two key details to pay attention to in the output:
+
+1. Nearly 10% of the requests recieve an error response. Looking at the logs, you will see that all of these errors are `SQLite3::BusyException: database is locked` exceptions.
+2. The slowest request took 8&times; longer than the average request. This is a sign that the app is not handling the load well.
+
+The goal of our work is to improve these two metrics while simultaneously adding more features to the app.
