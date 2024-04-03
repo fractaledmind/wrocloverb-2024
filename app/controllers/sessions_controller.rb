@@ -12,18 +12,14 @@ class SessionsController < ApplicationController
 
   # POST /sessions
   def create
-    @session = Session.new(
-      user: User.authenticate_by(
-        screen_name: session_params.dig(:user, :screen_name),
-        password: session_params.dig(:user, :password)
-      ),
-      user_agent: request.user_agent,
-      ip_address: request.ip
+    user = User.authenticate_by(
+      screen_name: session_params.dig(:user, :screen_name),
+      password: session_params.dig(:user, :password)
     )
 
-    if @session.save
-      sign_in(user: @session.user)
-      redirect_to @session.user, notice: "You have been signed in.", status: :see_other
+    if user
+      sign_in(user: user)
+      redirect_to user, notice: "You have been signed in.", status: :see_other
     else
       render :new, status: :unprocessable_entity
     end
