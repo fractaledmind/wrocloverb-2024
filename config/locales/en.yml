@@ -28,6 +28,15 @@
 #       enabled: "ON"
 
 en:
+  helpers:
+    submit:
+      session:
+        create: "Sign in"
+      user:
+        create: "Create account"
+        update: "Update profile"
+      comment:
+        create: "Post comment"
   errors:
     messages:
       not_saved:
