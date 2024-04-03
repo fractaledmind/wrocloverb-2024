@@ -37,4 +37,7 @@ FileUtils.chdir APP_ROOT do
   # puts "\n== Configuring puma-dev =="
   # system "ln -nfs #{APP_ROOT} ~/.puma-dev/#{APP_NAME}"
   # system "curl -Is https://#{APP_NAME}.test/up | head -n 1"
+
+  puts "\n== Configuring SQLite installation =="
+  system %q[bundle config set build.sqlite3 "--with-sqlite-cflags='-DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_LIKE_DOESNT_MATCH_BLOBS -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_PROGRESS_CALLBACK -DSQLITE_OMIT_SHARED_CACHE -DSQLITE_USE_ALLOCA -DSQLITE_ENABLE_FTS5'"]
 end
