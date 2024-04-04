@@ -288,3 +288,158 @@ So, we see slight improvements, but this is exactly what the [SQLite docs](https
 The average request time improved 4%, the average requests per second improved 4%, and the average 90th percentile response time improved 2.5%.
 
 You can decide for yourself whether these improvements are worth implementing compile-time flags. If you are running a high-traffic application, every little bit helps. If you are running a low-traffic application, you may not see any noticeable difference.
+
+## Step 3: Isolating read and write connection pools
+
+The metric that I want to improve next is the gap between the average response time and the slowest response time. Before we installed the enhanced adapter gem, the slowest response was 14&times; slower than the average response time (`15.7031/1.1122`). This was immediately improved by the enhanced adapter gem, which reduced the gap to 6&times; (`0.1890/0.03026667`). The gap actually grew a bit, on average, with the compile-time flags to 7&times; (`0.2044/0.02906667`), but this could well be within the margin of error, especially since our benchmarking endpoint is random in what particular actions are run.
+
+My first thought on how to improve this gap is to isolate the read and write connection pools. Since SQLite requires linear writes, when using a single database connection pool, it is possible for your connection pool to be blocked from performing any reads if write operations are consuming all of the connections. Since we are using SQLite in `WAL` mode, we can have multiple connections reading from the database while one connection is writing to the database. Our goal is to ensure that our Rails app can always read from the database, even if it is currently writing to the database.
+
+In order to do this, we are going to take advantage of Rails' [multi-database support](https://guides.rubyonrails.org/active_record_multiple_databases.html). However, instead of connecting to separate database files, we will create two separate connection pools to the same database file. This will allow us to have one connection pool for reading and one connection pool for writing. We will configure the connection pool for reading to have a maximum of 5 connections, and the connection pool for writing to have a maximum of 1 connection.
+
+In our `database.yml` file, we will update our production environment definition to setup a `reader` and `writer` connection pool:
+
+```yml
+production:
+  reader:
+    <<: *default
+    readonly: true
+    database: storage/production.sqlite3
+  writer:
+    <<: *default
+    pool: 1
+    database: storage/production.sqlite3
+```
+
+You will note that we are ensuring that all connections spun up in the `reader` pool are read-only connections. This is to ensure that we do not accidentally write to the database using a connection from the `reader` pool. We are also setting the `pool` size for the `writer` pool to 1, which will ensure that only one connection can be used to write to the database at a time.
+
+In our `application_record.rb` file, we will map these two new connection pools to the `writing` and `reading` roles:
+
+```ruby
+class ApplicationRecord < ActiveRecord::Base
+  primary_abstract_class
+
+  connects_to database: { writing: :writer, reading: :reader } if Rails.env.production?
+end
+```
+
+Finally, we will activate the automatic connection switching middleware:
+
+```sh
+bin/rails g active_record:multi_db
+```
+
+which will create a new `config/initializers/multi_db.rb` file.
+
+By uncommenting the configuration in this file, we can ensure that our Rails app will automatically switch between the `reader` and `writer` connection pools based on the type of query being executed:
+
+```ruby
+Rails.application.configure do
+  config.active_record.database_selector = { delay: 2.seconds }
+  config.active_record.database_resolver = ActiveRecord::Middleware::DatabaseSelector::Resolver
+  config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
+end
+```
+
+Since our "multiple databases" are not actually separate databases, we don't need a delay to ensure that subsequent requests read their own writes, so we will drop that to `0`. We also want to ensure that write operations that occur, even in "read requests" (GET or HEAD requests) are still sent to the `writer` connection pool. While not a perfect solution, we can mostly achieve this by overriding the `ActiveRecord::Base#transaction` method. I take advantage of the fact that the enhanced adapter gem will already prepend `EnhancedSQLite3::Adapter` to the SQLite adapter, so we can simply add this to the top of this file:
+
+```ruby
+# Patch the `activerecord-enhancedsqlite3-adapter` gem's Adapter class
+# to ensure that write operations are sent to the writing database.
+module EnhancedSQLite3
+  module Adapter
+    def transaction(...)
+      ActiveRecord::Base.connected_to(role: ActiveRecord.writing_role, prevent_writes: false) do
+        super(...)
+      end
+    end
+  end
+end
+```
+
+Finally, since our benchmarking endpoints randomly select between read and write operations, we will need to default all benchmarking requests to the `reader` pool and allow the `#transaction` override to take control when write operations occur. We can define our own custom resolver in this `multi_db.rb` file:
+
+```ruby
+# Ensure that the benchmarking path is read from the reading database.
+# We will force write operations to the writing database by patching the
+# `transaction` method in the adapter.
+module EnhancedSQLite3
+  module Middleware
+    class DatabaseSelector
+      class Resolver < ActiveRecord::Middleware::DatabaseSelector::Resolver
+        def reading_request?(request)
+          request.get? || request.head? || request.path.start_with?("/benchmarking")
+        end
+      end
+    end
+  end
+end
+```
+
+With this all in place, our updated configuration looks like:
+
+```ruby
+Rails.application.configure do
+  # Since we aren't actually using separate databases, only separate connections,
+  # we don't need to ensure that requests "read your own writes" with a `delay`
+  config.active_record.database_selector = { delay: 0 }
+  # Use our custom resolver to ensure that benchmarking requests are sent to the reading database connection
+  config.active_record.database_resolver = EnhancedSQLite3::Middleware::DatabaseSelector::Resolver
+  # Keep Rails' default resolver context
+  config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
+end
+```
+
+We have no isolated reading and writing connection pools. Let's now perform our load test to see how this might improve our p99 performance:
+
+```
+$ hey -c 20 -z 10s -m POST http://127.0.0.1:3000/benchmarking/balanced
+
+Summary:
+  Total:	10.0319 secs
+  Slowest:	0.1673 secs
+  Fastest:	0.0034 secs
+  Average:	0.0288 secs
+  Requests/sec:	692.1930
+
+  Total data:	169920386 bytes
+  Size/request:	24470 bytes
+
+Response time histogram:
+  0.003 [1]	|
+  0.020 [2689]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.036 [2223]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.053 [1366]	|■■■■■■■■■■■■■■■■■■■■
+  0.069 [463]	|■■■■■■■
+  0.085 [145]	|■■
+  0.102 [40]	|■
+  0.118 [11]	|
+  0.135 [5]	|
+  0.151 [0]	|
+  0.167 [1]	|
+
+
+Latency distribution:
+  10% in 0.0110 secs
+  25% in 0.0154 secs
+  50% in 0.0248 secs
+  75% in 0.0385 secs
+  90% in 0.0518 secs
+  95% in 0.0622 secs
+  99% in 0.0820 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0000 secs, 0.0034 secs, 0.1673 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0000 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0015 secs
+  resp wait:	0.0209 secs, 0.0022 secs, 0.1380 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0037 secs
+
+Status code distribution:
+  [200]	6944 responses
+```
+
+Again, these results come from the run with the highest requets per second. I ran the command three times on a freshly seeded database (not resetting the database after each run, only at the beginning of the set of three runs). Across the three runs, the single slowest request took 0.1673 seconds. The average request time was 0.02926667 seconds (`[0.0292, 0.0298, 0.0288]`). The average requests per second was 681.94356667 (`[683.6368, 670.0009, 692.1930]`). There were no 500 errored responses per run. Finally, the average 90th percentile response time was 0.05443333 seconds (`[0.0518, 0.0565, 0.0550]`).
+
+Unfortunately, we won't see massive performance improvements from this change like we did by installing the enhanced adapter gem, but this still does improve our tail performance. Compared to the load test runs from step 2, our p90 response time improved 7% (`0.05816667/0.05443333`), but our p99 response time improved 15% (`0.10276667/0.0892`). The average slowest response time improved 14% (`0.1794/0.15776667`), and the single slowest response time improved 13% (`0.1890/0.1673`). Overall, the gap between the average response time and the slowest response improved 10% (`6.2444927/5.71640026`). Sure, this isn't 100% improvements, but our slowest request is still not even 200 milliseconds. And when it comes to long-tail performance, every little bit helps.
+
