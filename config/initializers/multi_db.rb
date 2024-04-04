@@ -50,13 +50,15 @@ end
 # these configuration options.
 
 Rails.application.configure do
-  # Since we aren't actually using separate databases, only separate connections,
-  # we don't need to ensure that requests "read your own writes" with a `delay`
-  config.active_record.database_selector = { delay: 0 }
-  # Use our custom resolver to ensure that benchmarking requests are sent to the reading database connection
-  config.active_record.database_resolver = EnhancedSQLite3::Middleware::DatabaseSelector::Resolver
-  # Keep Rails' default resolver context
-  config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
+  if Rails.env.production?
+    # Since we aren't actually using separate databases, only separate connections,
+    # we don't need to ensure that requests "read your own writes" with a `delay`
+    config.active_record.database_selector = { delay: 0 }
+    # Use our custom resolver to ensure that benchmarking requests are sent to the reading database connection
+    config.active_record.database_resolver = EnhancedSQLite3::Middleware::DatabaseSelector::Resolver
+    # Keep Rails' default resolver context
+    config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
+  end
 end
 
 # Enable Shard Selector
