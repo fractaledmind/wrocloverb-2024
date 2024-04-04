@@ -24,6 +24,9 @@ module EnhancedSQLite3
     end
   end
 end
+ActiveSupport.on_load(:active_record_sqlite3adapter) do
+  prepend EnhancedSQLite3::Adapter
+end
 
 # Multi-db Configuration
 #

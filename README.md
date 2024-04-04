@@ -443,3 +443,30 @@ Again, these results come from the run with the highest requets per second. I ra
 
 Unfortunately, we won't see massive performance improvements from this change like we did by installing the enhanced adapter gem, but this still does improve our tail performance. Compared to the load test runs from step 2, our p90 response time improved 7% (`0.05816667/0.05443333`), but our p99 response time improved 15% (`0.10276667/0.0892`). The average slowest response time improved 14% (`0.1794/0.15776667`), and the single slowest response time improved 13% (`0.1890/0.1673`). Overall, the gap between the average response time and the slowest response improved 10% (`6.2444927/5.71640026`). Sure, this isn't 100% improvements, but our slowest request is still not even 200 milliseconds. And when it comes to long-tail performance, every little bit helps.
 
+## Step 4: Use the `Extralite` driver
+
+Here are the stats from Step 3:
+
+```
+Slowest: [0.1500, 0.1560, 0.1673]
+Fastest: [0.0035, 0.0035, 0.0034]
+Average: [0.0292, 0.0298, 0.0288]
+Requests/sec: [683.6368, 670.0009, 692.1930]
+75% in [0.0398, 0.0404, 0.0385]
+90% in [0.0550, 0.0565, 0.0518]
+95% in [0.0658, 0.0677, 0.0622]
+99% in [0.0924, 0.0932, 0.0820]
+```
+
+And these are the stats for this step:
+
+```
+Slowest: [0.5741, 0.8128, 0.5849]
+Fastest: [0.0035, 0.0034, 0.0040]
+Average: [0.0378, 0.0354, 0.0359]
+Requests/sec: [525.1797, 563.2757, 556.4938]
+75% in [0.0470, 0.0444, 0.0438]
+90% in [0.0677, 0.0647, 0.0641]
+95% in [0.0838, 0.0809, 0.0809]
+99% in [0.1418, 0.1330, 0.1392]
+```
