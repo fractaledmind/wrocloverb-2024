@@ -1,6 +1,4 @@
-class BenchmarkingController < ApplicationController
-  skip_before_action :verify_authenticity_token
-  skip_before_action :ensure_user_authenticated!
+class BenchmarkingController < ActionController::API
   before_action :set_user_update_last_seen_at
 
   # POST /benchmarking/read_heavy
