@@ -7,12 +7,17 @@ class PostsController < ApplicationController
 
   # GET /posts
   def index
-    @posts = Post.all.order(created_at: :desc).limit(50)
+    render Posts::IndexView.new(
+      posts: Post.all.order(created_at: :desc).limit(50)
+    )
   end
 
   # GET /posts/1
   def show
     @post = Post.find(params[:id])
+    render Posts::ShowView.new(
+      post: @post
+    )
   end
 
   # ----- authenticated actions -----
@@ -24,10 +29,16 @@ class PostsController < ApplicationController
   # GET /posts/new
   def new
     @post = Current.user.posts.new
+    render Posts::NewView.new(
+      post: @post
+    )
   end
 
   # GET /posts/1/edit
   def edit
+    render Posts::EditView.new(
+      post: @post
+    )
   end
 
   # POST /posts
