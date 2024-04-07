@@ -14,7 +14,7 @@ class UsersController < ApplicationController
 
   # GET /users/new
   def new
-    render Users::ShowView.new(
+    render Users::NewView.new(
       user: User.new
     )
   end
