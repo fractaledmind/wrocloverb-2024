@@ -65,16 +65,16 @@ class BenchmarkingController < ActionController::API
 
   def post_show
     @post = Post.where("id >= ?", rand(Post.minimum(:id)..Post.maximum(:id))).limit(1).first
-    render "posts/show", status: :ok
+    render Posts::ShowView.new(post: @post), status: :ok
   end
 
   def posts_index
     @posts = Post.where("id >= ?", rand(Post.minimum(:id)..Post.maximum(:id))).limit(100)
-    render "posts/index", status: :ok
+    render Posts::IndexView.new(posts: @posts), status: :ok
   end
 
   def user_show
-    render "users/show", status: :ok
+    render Users::ShowView.new(user: @user), status: :ok
   end
 
   private
