@@ -7,12 +7,16 @@ class UsersController < ApplicationController
 
   # GET /users/1
   def show
-    @user = User.find(params[:id])
+    render Users::ShowView.new(
+      user: User.find(params[:id])
+    )
   end
 
   # GET /users/new
   def new
-    @user = User.new
+    render Users::ShowView.new(
+      user: User.new
+    )
   end
 
   # POST /users
@@ -34,6 +38,9 @@ class UsersController < ApplicationController
 
   # GET /users/1/edit
   def edit
+    render Users::EditView.new(
+      user: @user
+    )
   end
 
   # PATCH/PUT /users/1
