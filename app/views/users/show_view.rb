@@ -83,7 +83,7 @@ class Users::ShowView < ApplicationView
             plain @user.sessions.size
           end
           ul(class: "list-[square] list-inside space-y-4 pl-6") do
-            @user.sessions.order(created_at: :desc).each { |session| render session }
+            @user.sessions.order(created_at: :desc).each { |session| render Sessions::Session.new(session:) }
           end
         end
       end

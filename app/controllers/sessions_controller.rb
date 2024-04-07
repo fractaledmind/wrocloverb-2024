@@ -7,7 +7,9 @@ class SessionsController < ApplicationController
 
   # GET /sessions/new
   def new
-    @session = Session.new
+    render Sessions::NewView.new(
+      session: Session.new
+    )
   end
 
   # POST /sessions
@@ -21,7 +23,9 @@ class SessionsController < ApplicationController
       sign_in(user: user)
       redirect_to user, notice: "You have been signed in.", status: :see_other
     else
-      render :new, status: :unprocessable_entity
+      render Sessions::NewView.new(
+        session: Session.new.tap { |s| s.errors.add(:base, "Invalid screen name or password.") }
+      ), status: :unprocessable_entity
     end
   end
 
