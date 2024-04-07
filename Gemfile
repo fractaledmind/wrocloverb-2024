@@ -67,3 +67,5 @@ gem "browser", "~> 5.3"
 gem "faker", "~> 3.3"
 
 gem "activerecord-enhancedsqlite3-adapter", "~> 0.5.0"
+
+gem "phlex-rails", "~> 1.2"
