@@ -7,6 +7,9 @@ class CommentsController < ApplicationController
 
   # GET /comments/1/edit
   def edit
+    render Comments::EditView.new(
+      comment: @comment
+    )
   end
 
   # POST /comments

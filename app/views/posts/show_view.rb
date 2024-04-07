@@ -69,13 +69,17 @@ class Posts::ShowView < ApplicationView
     hr(class: "border-black border")
     br
 
-    render "comments/form", comment: @post.comments.new if Current.user.present?
+    if Current.user.present?
+      render Comments::Form.new(comment: @post.comments.new)
+    end
 
     if @post.comments.exists?
       br
 
       div(id: "comments", class: "space-y-4") do
-        render @post.comments.order(created_at: :desc)
+        @post.comments.order(created_at: :desc).each do |comment|
+          render Comments::Comment.new(comment: comment)
+        end
       end
     end
   end
