@@ -1,4 +1,4 @@
-class Comments::Form < ApplicationView
+class Comments::Form < ApplicationComponent
   include Phlex::Rails::Helpers::FormWith
 
   def initialize(comment:)

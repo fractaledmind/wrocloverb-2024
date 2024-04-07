@@ -1,4 +1,4 @@
-class Sessions::Form < ApplicationView
+class Sessions::Form < ApplicationComponent
   include Phlex::Rails::Helpers::FieldsFor
   include Phlex::Rails::Helpers::FormWith
 

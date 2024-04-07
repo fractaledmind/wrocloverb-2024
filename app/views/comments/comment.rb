@@ -1,4 +1,4 @@
-class Comments::Comment < ApplicationView
+class Comments::Comment < ApplicationComponent
   include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::ControllerName
   include Phlex::Rails::Helpers::DOMID

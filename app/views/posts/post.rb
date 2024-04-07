@@ -1,4 +1,4 @@
-class Posts::Post < ApplicationView
+class Posts::Post < ApplicationComponent
   include Phlex::Rails::Helpers::ActionName
   include Phlex::Rails::Helpers::ControllerName
   include Phlex::Rails::Helpers::LinkTo

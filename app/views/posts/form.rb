@@ -1,4 +1,4 @@
-class Posts::Form < ApplicationView
+class Posts::Form < ApplicationComponent
   include Phlex::Rails::Helpers::FormWith
 
   def initialize(post:)

@@ -1,4 +1,4 @@
-class Sessions::Session < ApplicationView
+class Sessions::Session < ApplicationComponent
   include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::TimeTag
