@@ -14,9 +14,8 @@ class PostsController < ApplicationController
 
   # GET /posts/1
   def show
-    @post = Post.find(params[:id])
     render Posts::ShowView.new(
-      post: @post
+      post: Post.find(params[:id])
     )
   end
 
@@ -28,9 +27,8 @@ class PostsController < ApplicationController
 
   # GET /posts/new
   def new
-    @post = Current.user.posts.new
     render Posts::NewView.new(
-      post: @post
+      post: Current.user.posts.new
     )
   end
 
