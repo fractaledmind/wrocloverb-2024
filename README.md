@@ -141,3 +141,67 @@ There are a few key details to pay attention to in the output:
 4. The p90 response time is nearly 7 seconds. This is a very high number, and it is likely that users will not be happy with the performance of the app.
 
 The goal of our work is to improve these metrics while simultaneously adding more features to the app.
+
+## Step 1: Add the `activerecord-enhancedsqlite3-adapter` gem
+
+The first, and simplest, step to improving our #SQLiteOnRails app is to add the `activerecord-enhancedsqlite3-adapter` gem to our Gemfile. This gem, well, enhances Rails' SQLite adapter. All of the changes that the gem makes are either in Rails `main`, in a point release, or in an open PR. The gem makes all of those improvements available to Rails apps on version 7.0 or higher. As of April 12, 2024, the pull requests to improve the performance of SQLite in a multi-threaded environment are still open. This gem is thus the only way to get those improvements today.
+
+However, there is no setup needed. Literally just run:
+
+```sh
+bundle add activerecord-enhancedsqlite3-adapter
+```
+
+After installing the gem and restarting your server, you can re-run the load test and see how the results have changed. On my laptop, I got these results after only installing the gem:
+
+```
+$ hey -c 20 -z 10s -m POST http://127.0.0.1:3000/benchmarking/balanced
+
+Summary:
+  Total:	10.0390 secs
+  Slowest:	0.1635 secs
+  Fastest:	0.0031 secs
+  Average:	0.0292 secs
+  Requests/sec:	683.0386
+
+  Total data:	158728381 bytes
+  Size/request:	23148 bytes
+
+Response time histogram:
+  0.003 [1]	|
+  0.019 [2931]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.035 [1858]	|■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.051 [1124]	|■■■■■■■■■■■■■■■
+  0.067 [503]	|■■■■■■■
+  0.083 [235]	|■■■
+  0.099 [120]	|■■
+  0.115 [49]	|■
+  0.131 [21]	|
+  0.147 [12]	|
+  0.163 [3]	|
+
+
+Latency distribution:
+  10% in 0.0085 secs
+  25% in 0.0125 secs
+  50% in 0.0240 secs
+  75% in 0.0390 secs
+  90% in 0.0581 secs
+  95% in 0.0731 secs
+  99% in 0.1047 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0000 secs, 0.0031 secs, 0.1635 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0000 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0009 secs
+  resp wait:	0.0203 secs, 0.0022 secs, 0.1457 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0029 secs
+
+Status code distribution:
+  [200]	6856 responses
+  [404]	1 responses
+```
+
+As always, these results come from the run with the highest requets per second. I ran the command three times on a freshly seeded database (not resetting the database after each run, only at the beginning of the set of three runs). Across the three runs, the single slowest request took 0.1890 seconds. The average request time was 0.03026667 seconds (`[0.0305, 0.0292, 0.0311]`). The average requests per second was 660 (`[655.3554, 683.0386, 641.6073]`). There were no 500 errored responses per run. Finally, the average 90th percentile response time was 0.0596 seconds (`[0.0594, 0.0581, 0.0613]`).
+
+These are _amazing_ improvements! Our slowest request was improved by 83&times;, average request time improved by 36&times;, requests per second improved by 40&times;, the 90th percentile response time improved by 117&times;, and we went from frequent 500 errors to _none_! These are **huge** improvements, and they were all achieved by adding a single gem to our Gemfile.
